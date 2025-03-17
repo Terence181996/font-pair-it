@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "npm install --legacy-peer-deps && next build --no-lint"
+    "vercel-build": "npm install -g typescript && npm install --legacy-peer-deps && next build --no-lint"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -38,6 +38,9 @@
     "@radix-ui/react-toggle": "^1.1.1",
     "@radix-ui/react-toggle-group": "^1.1.1",
     "@radix-ui/react-tooltip": "^1.1.6",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -59,14 +62,10 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
+    "typescript": "^5",
     "zod": "^3.24.1"
   },
-  "devDependencies": {
-    "@types/node": "^22",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "typescript": "^5"
-  },
+  "devDependencies": {},
   "description": "An intelligent font pairing application that helps designers discover and preview perfect font combinations for their projects. Powered by Google Fonts API.",
   "main": "index.js",
   "directories": {
