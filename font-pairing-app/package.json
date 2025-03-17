@@ -49,6 +49,7 @@
     "lucide-react": "^0.454.0",
     "next": "15.1.0",
     "next-themes": "^0.4.4",
+    "postcss": "^8",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-hook-form": "^7.54.1",
@@ -56,6 +57,7 @@
     "recharts": "2.15.0",
     "sonner": "^1.7.1",
     "tailwind-merge": "^2.5.5",
+    "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
     "zod": "^3.24.1"
   },
@@ -63,8 +65,6 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "postcss": "^8",
-    "tailwindcss": "^3.4.17",
     "typescript": "^5"
   },
   "description": "An intelligent font pairing application that helps designers discover and preview perfect font combinations for their projects. Powered by Google Fonts API.",
