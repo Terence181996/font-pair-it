@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, useRef } from "react"
 import {
   Inter,
   Roboto_Serif,
@@ -16,10 +16,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { Copy, Download, Share2, Smartphone, Monitor, RefreshCw, Check, ChevronsUpDown, Search, Moon, Sun } from "lucide-react"
+import { Copy, Download, Share2, Smartphone, Monitor, RefreshCw, Check, ChevronsUpDown, Search, Moon, Sun, X } from "lucide-react"
 import FontPairCard from "@/components/font-pair-card"
 import ColorPicker from "@/components/color-picker"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/components/ui/use-toast"
 import { 
   loadAndInjectFont, 
   fetchAllGoogleFonts, 
@@ -40,7 +41,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { useTheme } from "next-themes"
+import dynamic from "next/dynamic"
+
+// Dynamically import html2canvas to avoid SSR issues
+const Html2Canvas = dynamic(() => import("html2canvas"), { ssr: false })
 
 // Initialize with Next.js fonts for SSR compatibility
 const inter = Inter({ 
@@ -154,13 +167,11 @@ const getUniqueFonts = (fontPairs: FontPair[], type: 'heading' | 'body'): FontIn
   return uniqueFonts
 }
 
-// Convert Google Font item to internal format
-const convertGoogleFontToInternal = (googleFont: GoogleFontItem | null): FontInfo | null => {
-  if (!googleFont) return null;
+// Convert a GoogleFontItem to our internal font format
+const convertGoogleFontToInternal = (font: GoogleFontItem): { name: string, font: any } => {
   return {
-    name: googleFont.family,
-    // No font object for dynamic fonts - we load them directly
-    font: null
+    name: font.family,
+    font: null // We'll rely on dynamic loading
   };
 };
 
@@ -197,6 +208,9 @@ export default function Home() {
   const [bodySize, setBodySize] = useState(16)
   const [subheadingSize, setSubheadingSize] = useState(24)
   const [category, setCategory] = useState("All")
+  const [isSharing, setIsSharing] = useState(false)
+  const previewRef = useRef<HTMLDivElement>(null)
+  const { toast } = useToast()
   
   // Dynamic Google Fonts state
   const [googleFonts, setGoogleFonts] = useState<GoogleFontItem[]>([])
@@ -222,15 +236,37 @@ export default function Home() {
   // Add theme toggle functionality
   const { theme, setTheme } = useTheme()
   
-  // Reset background color based on theme
+  // Reset background color based on theme (only for initial default)
   const resetBgColor = () => {
+    localStorage.removeItem('userSelectedBgColor')
     setBgColor(theme === 'dark' ? '#1e1e1e' : '#ffffff')
   }
   
-  // Update background color when theme changes
+  // Set initial background color only once when component mounts, not on theme change
   useEffect(() => {
-    resetBgColor()
-  }, [theme])
+    if (isMounted && !localStorage.getItem('userSelectedBgColor')) {
+      resetBgColor()
+    }
+  }, [isMounted])
+  
+  // Store user color selection in localStorage
+  useEffect(() => {
+    if (isMounted && bgColor) {
+      localStorage.setItem('userSelectedBgColor', bgColor)
+    }
+  }, [bgColor, isMounted])
+  
+  // Load saved color from localStorage on mount
+  useEffect(() => {
+    if (isMounted) {
+      const savedColor = localStorage.getItem('userSelectedBgColor')
+      if (savedColor) {
+        setBgColor(savedColor)
+      } else {
+        resetBgColor()
+      }
+    }
+  }, [isMounted])
   
   // Safely mount component
   useEffect(() => {
@@ -320,66 +356,54 @@ export default function Home() {
     return "Harmonious";
   }
   
-  // Handle selecting a font pair
-  const handleSelect = (pair: FontPair) => {
-    setHeadingFont(pair.heading)
-    setBodyFont(pair.body)
+  // Scroll to the preview section
+  const scrollToPreview = () => {
     if (!isMounted) return;
     
-    const previewSection = document.getElementById("preview-section")
-    if (previewSection) {
-      previewSection.scrollIntoView({ behavior: "smooth" })
+    // Use the ref instead of getElementById for better React integration
+    if (previewRef.current) {
+      previewRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }
+  };
 
-  // Enhanced generate button function with loading state
-  const generatePairing = async () => {
-    if (isGenerating || googleFonts.length === 0) return
+  // Select a font pair card
+  const selectFontPair = (pair: FontPair) => {
+    setHeadingFont(pair.heading);
+    setBodyFont(pair.body);
+    
+    // Scroll to preview section
+    scrollToPreview();
+  };
 
-    setIsGenerating(true)
+  // Generate a new font pairing
+  const generateNewPairing = async () => {
+    if (!googleFonts || googleFonts.length === 0 || isGenerating) return;
+    setIsGenerating(true);
     
     try {
-      // Get a new pairing based on contrast and category
-      const normalizedContrast = contrastValue / 100
-      const newPairing = await generateFontPairing(
+      const newPair = await generateFontPairing(
         googleFonts, 
-        normalizedContrast, 
-        headingFont.name, 
-        fontCategory !== "All" ? fontCategory : undefined
-      )
-
-      if (newPairing) {
-        const heading = newPairing.heading
-        const body = newPairing.body
-
-        // Load and inject the fonts
-        const headingFontName = await loadAndInjectFont(heading)
-        const bodyFontName = await loadAndInjectFont(body)
-
-        // Set the new fonts
-        setHeadingFont({ name: headingFontName, font: null })
-        setBodyFont({ name: bodyFontName, font: null })
-
-        // Add to unique fonts lists if not already present
-        if (!uniqueHeadingFonts.some(f => f.name === headingFontName)) {
-          setUniqueHeadingFonts(prev => [...prev, { name: headingFontName, font: null }])
-        }
-        if (!uniqueBodyFonts.some(f => f.name === bodyFontName)) {
-          setUniqueBodyFonts(prev => [...prev, { name: bodyFontName, font: null }])
-        }
-
-        // Scroll to preview section
-        const previewSection = document.getElementById("preview-section")
-        if (previewSection) {
-          previewSection.scrollIntoView({ behavior: "smooth" })
-        }
+        contrastValue,
+        headingFont?.name,
+        bodyFont?.name
+      );
+      
+      if (newPair) {
+        const newHeadingFont = convertGoogleFontToInternal(newPair.heading);
+        const newBodyFont = convertGoogleFontToInternal(newPair.body);
+        
+        setHeadingFont(newHeadingFont);
+        setBodyFont(newBodyFont);
+        
+        // Scroll to preview
+        scrollToPreview();
       }
     } catch (error) {
-      console.error("Error generating font pairing:", error)
+      console.error("Error generating font pairing:", error);
     } finally {
-      setIsGenerating(false)
+      setIsGenerating(false);
     }
-  }
+  };
 
   // Filter font pairs by category
   const filteredPairs = category === "All" 
@@ -468,12 +492,264 @@ export default function Home() {
   const copyFontName = (fontName: string) => {
     navigator.clipboard.writeText(fontName)
       .then(() => {
-        // You could add a toast notification here
-        console.log(`Copied '${fontName}' to clipboard`);
-        alert(`Copied '${fontName}' to clipboard`);
+        toast({
+          title: "Font name copied",
+          description: `"${fontName}" has been copied to clipboard.`,
+        });
       })
       .catch(err => {
         console.error('Failed to copy text: ', err);
+        toast({
+          title: "Copy failed",
+          description: "Could not copy font name to clipboard.",
+          variant: "destructive"
+        });
+      });
+  };
+
+  // Add state for share dialog
+  const [shareDialogOpen, setShareDialogOpen] = useState(false)
+  const [sharePreviewHTML, setSharePreviewHTML] = useState<string>("")
+  
+  // Function to share font pairing
+  const captureAndShareScreenshot = () => {
+    if (!previewRef.current || !isMounted) return
+    
+    try {
+      setIsSharing(true)
+      
+      // Create an info element with font details
+      const fontDetailsHtml = `
+        <div style="padding: 16px; margin-top: 16px; font-family: sans-serif; background-color: ${bgColor}; color: ${getTextColor(bgColor, "body")}; border-radius: 4px; border-top: 1px solid #e2e8f0;">
+          <div style="margin-bottom: 8px"><strong>Heading:</strong> ${headingFont.name} (${headingSize}px)</div>
+          <div style="margin-bottom: 8px"><strong>Body:</strong> ${bodyFont.name} (${bodySize}px)</div>
+          <div><strong>Background:</strong> ${bgColor}</div>
+        </div>
+      `;
+      
+      // Get the content from the preview section
+      const previewContent = previewRef.current.outerHTML;
+      
+      // Combine content for the modal
+      const combinedHTML = `
+        <div style="max-width: 100%; margin: 0 auto; background-color: ${bgColor};">
+          ${previewContent}
+          ${fontDetailsHtml}
+        </div>
+      `;
+      
+      // Set the HTML for the dialog
+      setSharePreviewHTML(combinedHTML);
+      
+      // Open the share dialog
+      setShareDialogOpen(true);
+      
+      // Show success message
+      toast({
+        title: "Font pairing ready to share",
+        description: "Take a screenshot of this preview or use the buttons below to share.",
+      });
+      
+    } catch (error) {
+      console.error('Error sharing preview:', error);
+      toast({
+        title: "Sharing failed",
+        description: "There was an error creating the shareable view. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSharing(false);
+    }
+  }
+  
+  // Function to copy CSS code
+  const copyCSSCode = () => {
+    const cssCode = `/* Import fonts */
+@import url('https://fonts.googleapis.com/css2?family=${headingFont?.name ? headingFont.name.replace(/\s+/g, "+") : "Inter"}:wght@400;700&family=${bodyFont?.name ? bodyFont.name.replace(/\s+/g, "+") : "Open_Sans"}:wght@400;500&display=swap');
+
+/* Apply fonts */
+h1, h2, h3, h4, h5, h6 {
+  font-family: '${headingFont?.name || "Inter"}', serif;
+}
+
+body, p, div {
+  font-family: '${bodyFont?.name || "Open Sans"}', sans-serif;
+  font-size: ${bodySize}px;
+}
+
+h1 {
+  font-size: ${headingSize}px;
+}
+
+h2 {
+  font-size: ${subheadingSize}px;
+}`;
+
+    navigator.clipboard.writeText(cssCode)
+      .then(() => {
+        toast({
+          title: "CSS copied",
+          description: "CSS code has been copied to clipboard.",
+        });
+      })
+      .catch(err => {
+        console.error('Failed to copy CSS:', err);
+        toast({
+          title: "Copy failed",
+          description: "Could not copy CSS to clipboard.",
+          variant: "destructive"
+        });
+      });
+  };
+  
+  // Function to download as PNG - simplified version without using canvas API
+  const downloadAsPNG = async () => {
+    try {
+      // Get the HTML content from the preview
+      const content = document.getElementById('share-preview-content')?.innerHTML;
+      
+      if (!content) {
+        throw new Error('Preview content not found');
+      }
+      
+      // Create a new window to display printable version
+      const printWindow = window.open('', '_blank');
+      
+      if (!printWindow) {
+        toast({
+          title: "Popup blocked",
+          description: "Please allow popups to save your font pairing.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Write HTML with proper fonts to the new window
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>Font Pairing: ${headingFont.name} & ${bodyFont.name}</title>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <link href="https://fonts.googleapis.com/css2?family=${headingFont.name.replace(/\s+/g, "+")}:wght@400;700&family=${bodyFont.name.replace(/\s+/g, "+")}:wght@400;500&display=swap" rel="stylesheet">
+            <style>
+              body { 
+                margin: 0; 
+                padding: 20px; 
+                background-color: ${bgColor};
+                color: ${getTextColor(bgColor, "body")};
+              }
+              .container { 
+                max-width: 800px; 
+                margin: 0 auto; 
+                padding: 20px; 
+              }
+              @media print { 
+                body { 
+                  -webkit-print-color-adjust: exact; 
+                  color-adjust: exact; 
+                } 
+              }
+              .footer {
+                margin-top: 20px;
+                border-top: 1px solid #ddd;
+                padding-top: 10px;
+                font-family: sans-serif;
+                font-size: 14px;
+              }
+              .btn {
+                background: #0070f3;
+                color: white;
+                border: none;
+                padding: 10px 15px;
+                border-radius: 4px;
+                cursor: pointer;
+                margin-top: 15px;
+                font-family: sans-serif;
+              }
+              h1, h2, h3 {
+                font-family: '${headingFont.name}', serif;
+              }
+              p, div {
+                font-family: '${bodyFont.name}', sans-serif;
+              }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              ${content}
+              <div class="footer">
+                <p><strong>Heading Font:</strong> ${headingFont.name} (${headingSize}px)</p>
+                <p><strong>Body Font:</strong> ${bodyFont.name} (${bodySize}px)</p>
+                <p><strong>Background:</strong> ${bgColor}</p>
+                <button class="btn" onclick="window.print()">Save as PDF/Print</button>
+              </div>
+            </div>
+            <script>
+              document.title = "Font Pairing: ${headingFont.name} & ${bodyFont.name}";
+            </script>
+          </body>
+        </html>
+      `);
+      
+      printWindow.document.close();
+      
+      toast({
+        title: "Shareable view created",
+        description: "Use Print/Save as PDF to save the font pairing.",
+      });
+    } catch (error) {
+      console.error('Error creating shareable view:', error);
+      toast({
+        title: "Share failed",
+        description: "Please try a different method to share your font pairing.",
+        variant: "destructive"
+      });
+    }
+  };
+  
+  // Add state for copy indicators
+  const [fontInfoCopied, setFontInfoCopied] = useState(false);
+  
+  // Function to copy font information
+  const copyFontInfo = () => {
+    const fontInfo = `Heading Font: ${headingFont.name} (${headingSize}px)
+Body Font: ${bodyFont.name} (${bodySize}px)
+Background Color: ${bgColor}
+
+CSS:
+@import url('https://fonts.googleapis.com/css2?family=${headingFont.name.replace(/\s+/g, "+")}:wght@400;700&family=${bodyFont.name.replace(/\s+/g, "+")}:wght@400;500&display=swap');
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: '${headingFont.name}', serif;
+}
+
+body, p, div {
+  font-family: '${bodyFont.name}', sans-serif;
+}`;
+
+    navigator.clipboard.writeText(fontInfo)
+      .then(() => {
+        // Show copied indicator
+        setFontInfoCopied(true);
+        
+        // Reset after 2 seconds
+        setTimeout(() => {
+          setFontInfoCopied(false);
+        }, 2000);
+        
+        toast({
+          title: "Information copied",
+          description: "Font pairing details copied to clipboard.",
+        });
+      })
+      .catch(err => {
+        console.error('Failed to copy:', err);
+        toast({
+          title: "Copy failed",
+          description: "Could not copy to clipboard.",
+          variant: "destructive"
+        });
       });
   };
 
@@ -537,6 +813,7 @@ export default function Home() {
                       isMobileView ? "max-w-[375px] mx-auto" : "w-full"
                     )}
                     style={{ backgroundColor: bgColor }}
+                    ref={previewRef}
                   >
                     {isMounted ? (
                       <>
@@ -887,7 +1164,7 @@ export default function Home() {
                     </div>
                     
                     <Button 
-                      onClick={generatePairing} 
+                      onClick={generateNewPairing} 
                       className="w-full" 
                       disabled={isGenerating || googleFonts.length === 0}
                     >
@@ -923,9 +1200,23 @@ export default function Home() {
                     </div>
 
                     <div>
-                      <Button variant="outline" className="w-full">
-                        <Share2 className="h-4 w-4 mr-2" />
-                        Share This Pairing
+                      <Button 
+                        variant="outline" 
+                        className="w-full"
+                        onClick={captureAndShareScreenshot}
+                        disabled={isSharing}
+                      >
+                        {isSharing ? (
+                          <>
+                            <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            Preparing...
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="h-4 w-4 mr-2" />
+                            Share This Pairing
+                          </>
+                        )}
                       </Button>
                     </div>
                   </div>
@@ -936,7 +1227,7 @@ export default function Home() {
                 <CardContent className="p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-semibold">CSS Code</h2>
-                    <Button variant="ghost" size="icon" title="Copy">
+                    <Button variant="ghost" size="icon" title="Copy" onClick={copyCSSCode}>
                       <Copy className="h-4 w-4" />
                     </Button>
                   </div>
@@ -996,13 +1287,54 @@ h2 {
                   headingFont={pair.heading}
                   bodyFont={pair.body}
                   category={pair.category}
-                  onSelect={() => handleSelect(pair)}
+                  onSelect={() => selectFontPair(pair)}
                 />
               ))}
             </div>
           </section>
         </div>
       </div>
+      
+      {/* Add the share dialog */}
+      <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
+        <DialogContent className="max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>
+              Font Pairing: {headingFont.name} & {bodyFont.name}
+            </DialogTitle>
+            <DialogDescription>
+              Take a screenshot of this preview or use the buttons below to share.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div 
+            className="mt-4 rounded-md overflow-hidden" 
+            style={{ backgroundColor: bgColor }}
+            dangerouslySetInnerHTML={{ __html: sharePreviewHTML }}
+            id="share-preview-content"
+          />
+          
+          <DialogFooter className="flex justify-between items-center gap-4 mt-4">
+            <Button variant="outline" onClick={copyFontInfo}>
+              {fontInfoCopied ? (
+                <>
+                  <Check className="h-4 w-4 mr-2" />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy Font Info
+                </>
+              )}
+            </Button>
+            <Button onClick={downloadAsPNG}>
+              <Download className="h-4 w-4 mr-2" />
+              Print/Save as PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </main>
   )
 }

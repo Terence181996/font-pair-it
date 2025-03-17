@@ -272,7 +272,7 @@ export const generateFontPairing = async (
 export const fetchAllGoogleFonts = async () => {
   if (!isBrowser()) return []
   
-  const API_KEY = process.env.GOOGLE_FONTS_API_KEY
+  const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_FONTS_API_KEY
   if (!API_KEY) {
     console.warn('Google Fonts API key is not configured')
     return []
@@ -332,7 +332,7 @@ export const loadGoogleFont = async (fontFamily: string) => {
     return fontCache.get(fontFamily)
   }
   
-  const API_KEY = process.env.GOOGLE_FONTS_API_KEY
+  const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_FONTS_API_KEY
   if (!API_KEY) {
     console.warn('Google Fonts API key is not configured')
     return null

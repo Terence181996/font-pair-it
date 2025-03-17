@@ -31,7 +31,7 @@ const nextConfig = {
   },
   experimental: {
     webpackBuildWorker: true,
-    parallelServerBuildTraces: true,
+    // parallelServerBuildTraces: true, // Disabled due to permission issues
     parallelServerCompiles: true,
   },
 }

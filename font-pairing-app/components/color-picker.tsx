@@ -154,6 +154,11 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
   const colorAreaRef = useRef<HTMLDivElement>(null);
   const hueSliderRef = useRef<HTMLDivElement>(null);
 
+  // Update the internal hex value when prop changes
+  useEffect(() => {
+    setHexValue(color);
+  }, [color]);
+
   // Update hex value when HSV changes
   useEffect(() => {
     const newHexValue = hsvToHex(hsv);
@@ -169,6 +174,7 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
     // Only update HSV if it's a valid hex color
     if (/^#[0-9A-F]{6}$/i.test(value)) {
       setHsv(hexToHsv(value));
+      onChange(value);
     }
   };
 
@@ -233,14 +239,19 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
             <div className="flex items-center gap-2">
               <input
                 type="color"
-                value={color}
-                onChange={(e) => onChange(e.target.value)}
+                value={hexValue}
+                onChange={(e) => {
+                  const newColor = e.target.value;
+                  setHexValue(newColor);
+                  setHsv(hexToHsv(newColor));
+                  onChange(newColor);
+                }}
                 className="h-10 w-10 cursor-pointer rounded-md"
               />
               <input
                 type="text"
-                value={color}
-                onChange={(e) => onChange(e.target.value)}
+                value={hexValue}
+                onChange={handleHexChange}
                 className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               />
             </div>
@@ -360,17 +371,6 @@ export default function ColorPicker({ color, onChange }: ColorPickerProps) {
               style={{
                 left: `${(hsv.h / 360) * 100}%`,
               }}
-            />
-          </div>
-
-          {/* Hex input */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Hex:</span>
-            <input
-              type="text"
-              value={hexValue}
-              onChange={handleHexChange}
-              className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
         </div>
