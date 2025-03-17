@@ -34,6 +34,13 @@ const nextConfig = {
     // parallelServerBuildTraces: true, // Disabled due to permission issues
     parallelServerCompiles: true,
   },
+  webpack: (config) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': '.'
+    };
+    return config;
+  }
 }
 
 mergeConfig(nextConfig, userConfig)
