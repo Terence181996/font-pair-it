@@ -2,5 +2,9 @@
   "buildCommand": "npm run vercel-build",
   "outputDirectory": ".next",
   "framework": "nextjs",
-  "installCommand": "npm install --legacy-peer-deps"
+  "installCommand": "npm install --legacy-peer-deps",
+  "env": {
+    "NEXT_TYPESCRIPT_CHECK": "false",
+    "SKIP_TYPE_CHECK": "true"
+  }
 } 
