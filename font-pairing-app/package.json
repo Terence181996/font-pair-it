@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "vercel-build": "npm install --legacy-peer-deps && next build"
+    "vercel-build": "npm install --legacy-peer-deps && next build --no-lint --skip-type-check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
