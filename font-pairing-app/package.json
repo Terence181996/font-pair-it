@@ -43,6 +43,8 @@
     "cmdk": "1.0.4",
     "date-fns": "4.1.0",
     "embla-carousel-react": "8.5.1",
+    "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
     "next": "15.1.0",
@@ -66,5 +68,13 @@
     "postcss": "^8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
-  }
+  },
+  "description": "An intelligent font pairing application that helps designers discover and preview perfect font combinations for their projects. Powered by Google Fonts API.",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
