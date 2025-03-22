@@ -1,33 +1,37 @@
-import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
-import { ThemeProvider } from "@/components/theme-provider"
-import { Toaster } from "@/components/ui/toaster"
+import { Providers } from "@/components/providers"
+import { MainNav } from "@/components/main-nav"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Font Pairing Explorer",
-  description: "Discover and preview perfect Google Font combinations for your projects",
-  generator: 'v0.dev'
+  title: "Font & Color Explorer",
+  description: "Explore and analyze font pairings and color combinations",
 }
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode
+  children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body 
         className={inter.className}
-        suppressHydrationWarning={true}
+        suppressHydrationWarning
+        data-new-gr-c-s-check-loaded={undefined}
+        data-gr-ext-installed={undefined}
       >
-        <ThemeProvider>
-          {children}
-          <Toaster />
-        </ThemeProvider>
+        <Providers>
+          <div className="relative min-h-screen">
+            <MainNav />
+            <div className="pt-16">
+              {children}
+            </div>
+          </div>
+        </Providers>
       </body>
     </html>
   )

@@ -233,10 +233,10 @@ export default function Home() {
   // Add new state for font category
   const [fontCategory, setFontCategory] = useState("All")
   
-  // Add theme toggle functionality
-  const { theme, setTheme } = useTheme()
+  // Keep theme for background color only
+  const { theme } = useTheme()
   
-  // Reset background color based on theme (only for initial default)
+  // Reset background color based on theme
   const resetBgColor = () => {
     localStorage.removeItem('userSelectedBgColor')
     setBgColor(theme === 'dark' ? '#1e1e1e' : '#ffffff')
@@ -452,27 +452,13 @@ export default function Home() {
   
   // Calculate text color based on background color
   const getTextColor = (bgColor: string, textType: "heading" | "body") => {
-    const bgContrast = calculateContrastYIQ(bgColor);
+    const contrast = calculateContrastYIQ(bgColor)
     
-    if (theme === "dark") {
-      // Dark theme
-      if (bgContrast === "dark") {
-        // Dark background, light text
-        return textType === "heading" ? "#ffffff" : "#e0e0e0";
-      } else {
-        // Light background, dark text in dark mode
-        return textType === "heading" ? "#000000" : "#333333";
-      }
-    } else {
-      // Light theme
-      if (bgContrast === "dark") {
-        // Dark background, light text
-        return textType === "heading" ? "#ffffff" : "#e0e0e0";
-      } else {
-        // Light background, dark text
-        return textType === "heading" ? "#000000" : "#333333";
-      }
+    // Simplified color logic
+    if (contrast === "dark") {
+      return textType === "heading" ? "#ffffff" : "#e1e1e1"
     }
+    return textType === "heading" ? "#000000" : "#1a1a1a"
   }
   
   // Add a font download function
@@ -773,18 +759,6 @@ body, p, div {
             <h1 className="text-3xl font-bold">Font Pairing Explorer</h1>
             <p className="text-muted-foreground">Discover and preview perfect font combinations for your projects</p>
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-          >
-            {theme === "light" ? (
-              <Sun className="h-5 w-5" />
-            ) : (
-              <Moon className="h-5 w-5" />
-            )}
-          </Button>
         </div>
 
         <div className="grid grid-cols-1 gap-8">
