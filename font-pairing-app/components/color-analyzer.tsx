@@ -1587,18 +1587,6 @@ export default function ColorAnalyzer() {
 
   return (
     <div className="min-h-screen">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background border-b">
-        <div className="container mx-auto h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-6">
-            <a className="text-xl font-bold transition-colors hover:text-primary" href="/">Font & Color Explorer</a>
-            <div className="flex items-center space-x-6">
-              <a className="text-sm font-medium transition-colors hover:text-primary text-muted-foreground" href="/">Font Pairing</a>
-              <a className="text-sm font-medium transition-colors hover:text-primary text-primary font-semibold" href="/color-palette">Color Palette</a>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       <main>
         <div className="container py-6">
           {activeTab === 'generate' && (
